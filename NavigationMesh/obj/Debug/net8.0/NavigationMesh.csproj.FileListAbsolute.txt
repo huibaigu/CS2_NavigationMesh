@@ -1,0 +1,16 @@
+D:\cs2_servers\game\csgo\addons_code\addons\counterstrikesharp\plugins\NavigationMesh\net8.0\NavigationMesh.deps.json
+D:\cs2_servers\game\csgo\addons_code\addons\counterstrikesharp\plugins\NavigationMesh\net8.0\NavigationMesh.dll
+D:\cs2_servers\game\csgo\addons_code\addons\counterstrikesharp\plugins\NavigationMesh\net8.0\NavigationMesh.pdb
+D:\cs2_servers\game\csgo\addons_code\NavigationMesh\NavigationMesh\obj\Debug\net8.0\NavigationMesh.csproj.AssemblyReference.cache
+D:\cs2_servers\game\csgo\addons_code\NavigationMesh\NavigationMesh\obj\Debug\net8.0\NavigationMesh.GeneratedMSBuildEditorConfig.editorconfig
+D:\cs2_servers\game\csgo\addons_code\NavigationMesh\NavigationMesh\obj\Debug\net8.0\NavigationMesh.AssemblyInfoInputs.cache
+D:\cs2_servers\game\csgo\addons_code\NavigationMesh\NavigationMesh\obj\Debug\net8.0\NavigationMesh.AssemblyInfo.cs
+D:\cs2_servers\game\csgo\addons_code\NavigationMesh\NavigationMesh\obj\Debug\net8.0\NavigationMesh.csproj.CoreCompileInputs.cache
+D:\cs2_servers\game\csgo\addons_code\NavigationMesh\NavigationMesh\obj\Debug\net8.0\Navigati.6F651C31.Up2Date
+D:\cs2_servers\game\csgo\addons_code\NavigationMesh\NavigationMesh\obj\Debug\net8.0\NavigationMesh.dll
+D:\cs2_servers\game\csgo\addons_code\NavigationMesh\NavigationMesh\obj\Debug\net8.0\refint\NavigationMesh.dll
+D:\cs2_servers\game\csgo\addons_code\NavigationMesh\NavigationMesh\obj\Debug\net8.0\NavigationMesh.pdb
+D:\cs2_servers\game\csgo\addons_code\NavigationMesh\NavigationMesh\obj\Debug\net8.0\ref\NavigationMesh.dll
+D:\cs2_servers\game\csgo\addons\counterstrikesharp\plugins\NavigationMesh\net8.0\NavigationMesh.deps.json
+D:\cs2_servers\game\csgo\addons\counterstrikesharp\plugins\NavigationMesh\net8.0\NavigationMesh.dll
+D:\cs2_servers\game\csgo\addons\counterstrikesharp\plugins\NavigationMesh\net8.0\NavigationMesh.pdb
