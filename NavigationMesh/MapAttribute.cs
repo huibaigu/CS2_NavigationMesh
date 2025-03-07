@@ -1,21 +1,14 @@
 using CounterStrikeSharp.API.Modules.Utils;
+using QuickGraph;
 
 namespace NavigationMesh.Other;
 public class Config
 {
-    public static float m_NodeRadius=100;//步进
+    public static float m_NodeRadius=400;//步进
     public static List<Vector> ROOMS=new List<Vector>();
-    public struct EDGE 
-    {
-        public int next;
-        public int to;
-        public float spend;
-    }
-    public static int edgeCount=0;
-    public static int nodeCount=0;
-    public static EDGE[] edge=new EDGE[100000];
-    public static int[] head=new int[1000];
-    public static int cnt=0;
+    public static UndirectedGraph<int, Edge<int>> graph = new UndirectedGraph<int, Edge<int>>();
+    public static Dictionary<Edge<int>,double> weight=new Dictionary<Edge<int>,double>();
+    public static Func<Edge<int>,double> edgecost=edge=>weight[edge];
 }
 public class MapAttribute()
 {
@@ -34,30 +27,23 @@ public class MapAttribute()
     }
     public void getEDGE()
     {
-        Config.nodeCount=Rooms.Count;
-        for(int i=0;i<Config.nodeCount;i++)
+        Config.graph=new UndirectedGraph<int, Edge<int>>();
+        Config.weight=new Dictionary<Edge<int>,double>();
+        for(int i=0;i<Rooms.Count;i++)Config.graph.AddVertex(i);
+        for(int i=0;i<Config.graph.VertexCount;i++)
         {
-            for(int j=i+1;j<Config.nodeCount;j++)
+            for(int j=i+1;j<Config.graph.VertexCount;j++)
             {
-                var from=i;
-                var to=j;
                 var spend=distance(Rooms[i],Rooms[j]);
                 if(spend<=Config.m_NodeRadius)
                 {
-                    Config.edge[++Config.cnt].next=Config.head[from];
-                    Config.edge[Config.cnt].to=to;
-                    Config.edge[Config.cnt].spend=spend;
-                    Config.head[from]=Config.cnt;
-                    Config.edgeCount++;
-
-                    Config.edge[++Config.cnt].next=Config.head[to];
-                    Config.edge[Config.cnt].to=from;
-                    Config.edge[Config.cnt].spend=spend;
-                    Config.head[to]=Config.cnt;
-                    Config.edgeCount++;
+                    var l=new Edge<int>(i,j);
+                    Config.graph.AddEdge(l);
+                    Config.weight.Add(l,spend);
                 }
             }
         }
+        Config.edgecost=edge=>Config.weight[edge];
     }
 }
 public class MapAttributeSet:MapAttribute
@@ -68,14 +54,14 @@ public class MapAttributeSet:MapAttribute
     }
     public MapAttributeSet(MapAttribute s)
     {
-        this.Name = s.Name;
-        this.Rooms = s.Rooms;
+        Name = s.Name;
+        Rooms = s.Rooms;
     }
     public MapAttribute print()
     {
         MapAttribute a=new MapAttribute();
-        a.Name=this.Name;
-        a.Rooms=this.Rooms;
+        a.Name=Name;
+        a.Rooms=Rooms;
         return a;
     }
     public void add(Vector point)
@@ -86,45 +72,5 @@ public class MapAttributeSet:MapAttribute
     public void delete()
     {
         if(Rooms.Count>0)Rooms.RemoveAt(Rooms.Count-1);
-    }
-}
-public class Dijkstra
-{
-    private float[] ans;
-    private bool[] vis;
-    public Dijkstra()
-    {
-        ans=new float[Config.edgeCount];
-        vis=new bool[Config.nodeCount];
-        for(int i=0;i<Config.nodeCount;ans[i++]=2147483647);
-    }
-    public List<Vector> GetPath(int from,int to)
-    {
-        var pos=from;
-        ans[pos]=0;
-        List<Vector> ph=new List<Vector>();
-        while(!vis[pos])
-        {
-            ph.Add(Config.ROOMS[pos]);
-            if(pos==to)break;
-            float minn=2147483647;
-            vis[pos]=true;
-            for(int i=Config.head[pos];i!=0;i=Config.edge[i].next)
-            {
-                if(!vis[Config.edge[i].to]&&ans[Config.edge[i].to]>ans[pos]+Config.edge[i].spend)
-                {
-                    ans[Config.edge[i].to]=ans[pos]+Config.edge[i].spend;
-                }
-            }
-            for(int i=1;i<=Config.nodeCount;i++)
-            {
-                if(ans[i]<minn&&vis[i]==false)
-                {
-                    minn=ans[i];
-                    pos=i;
-                }
-            }
-        }
-        return ph;
     }
 }

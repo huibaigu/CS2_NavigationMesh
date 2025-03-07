@@ -1,5 +1,8 @@
 ﻿using CounterStrikeSharp.API.Modules.Utils;
 using NavigationMeshAPI;
+using QuickGraph;
+using QuickGraph.Algorithms.Observers;
+using QuickGraph.Algorithms.ShortestPath;
 
 namespace NavigationMesh.Other;
 public class NavigationMeshInterface:INavigationMeshAPI
@@ -8,7 +11,7 @@ public class NavigationMeshInterface:INavigationMeshAPI
     {
         int ans=0;
         float ls=2147483647;
-        for(int i=0;i<Config.nodeCount;i++)
+        for(int i=0;i<Config.graph.VertexCount;i++)
         {
             float ll=(point-Config.ROOMS[i]).Length();
             if(ll>ls)continue;
@@ -24,14 +27,30 @@ public class NavigationMeshInterface:INavigationMeshAPI
         List<Vector> ans=new List<Vector>();
         if(from==to)
         {
-            ans.Add(point1);
-            ans.Add(Config.ROOMS[from]);
             ans.Add(point2);
             return ans.ToArray();
         }
-        ans.Add(point1);
-        Dijkstra ls=new Dijkstra();
-        ans.AddRange(ls.GetPath(from,to));
+        var pathFinder = new UndirectedDijkstraShortestPathAlgorithm<int, Edge<int>>(Config.graph, Config.edgecost);
+        var predecessors=new UndirectedVertexPredecessorRecorderObserver<int, Edge<int>>();
+        using (predecessors.Attach(pathFinder))
+        {
+            pathFinder.Compute(from);
+        }
+        if(predecessors.TryGetPath(to,out var path))
+        {
+            int ls=-1;
+            foreach(var edge in path)
+            {
+                if(ls==-1)
+                {
+                    ans.Add(Config.ROOMS[edge.Source]);
+                    ls=0;
+                }
+                ans.Add(Config.ROOMS[edge.Target]);
+            }
+            ans.Add(point2);
+            return ans.ToArray();
+        }
         ans.Add(point2);
         return ans.ToArray();
     }

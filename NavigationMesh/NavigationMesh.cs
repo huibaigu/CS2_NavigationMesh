@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using static CounterStrikeSharp.API.Core.Listeners;
 using CounterStrikeSharp.API;
 using System.Drawing;
+
 namespace NavigationMesh;
 public class NavigationMesh(ILogger<NavigationMesh> logger) : BasePlugin
 {
@@ -21,12 +22,16 @@ public class NavigationMesh(ILogger<NavigationMesh> logger) : BasePlugin
     private readonly ILogger<NavigationMesh> _logger = logger;
     public Dictionary<string, MapAttribute> NavigationMeshConfig=new Dictionary<string, MapAttribute>();
     public MapAttributeSet thismap=new MapAttributeSet();
+    public INavigationMeshAPI? NM_API{ get; set; }
     public override void Load(bool hotReload)
     {
         AddCommand("css_nm_add", "Add boundary points to the current mesh", addPoint);
         AddCommand("css_nm_delete", "Delete the previous point", deleteStack);
         AddCommand("css_nm_debug", "Generate a route around the mesh", debug);
         AddCommand("css_nm_clear", "clear a route", clear);
+        
+        AddCommand("css_nm_set1", "set point 1", set1);
+        AddCommand("css_nm_set2", "Generate a route from 1 to 2", set2);
         var configPath = Path.Combine(ConfigPath, "Point.jsonc");
         if(!File.Exists(configPath))
         {
@@ -37,7 +42,28 @@ public class NavigationMesh(ILogger<NavigationMesh> logger) : BasePlugin
         NavigationMeshConfig = JsonConvert.DeserializeObject<Dictionary<string, MapAttribute>>(File.ReadAllText(configPath))??new Dictionary<string, MapAttribute>();
         RegisterListener<OnMapStart>(OnMapStart);
         Capabilities.RegisterPluginCapability(APICapability, () => new NavigationMeshInterface());
+
+        NM_API = APICapability.Get()!;
     }
+    Vector pointA;
+    //[RequiresPermissions("@css/nm_admin")]
+    private void set2(CCSPlayerController? player, CommandInfo commandInfo)
+    {
+        clear(player,commandInfo);
+        var list=NM_API.GetPoint1ToPoint2List(pointA,player?.PlayerPawn.Value!.AbsOrigin!)??[];
+        for(int i=0;i<list.Length;i++)
+        {
+            creatTo(list[i],i);
+            if(i!=0)creatFrom(list[i-1],i-1,i);
+        }
+    }
+    //[RequiresPermissions("@css/nm_admin")]
+    private void set1(CCSPlayerController? player, CommandInfo commandInfo)
+    {
+
+        pointA=new Vector(player?.PlayerPawn.Value!.AbsOrigin!.X,player?.PlayerPawn.Value!.AbsOrigin!.Y,player?.PlayerPawn.Value!.AbsOrigin!.Z);
+    }
+
     public void OnMapStart(string mapname)
     {
         if(!NavigationMeshConfig.ContainsKey(mapname))NavigationMeshConfig.Add(mapname, new MapAttribute());
@@ -63,7 +89,7 @@ public class NavigationMesh(ILogger<NavigationMesh> logger) : BasePlugin
         File.WriteAllText(configPath, JsonConvert.SerializeObject(NavigationMeshConfig, Formatting.Indented));
         Config.ROOMS=thismap.toVector();
         thismap.getEDGE();
-        debug(client,info);
+        //debug(client,info);
     }
     //[RequiresPermissions("@css/nm_admin")]
     public void deleteStack(CCSPlayerController? client, CommandInfo info)
@@ -82,22 +108,16 @@ public class NavigationMesh(ILogger<NavigationMesh> logger) : BasePlugin
         File.WriteAllText(configPath, JsonConvert.SerializeObject(NavigationMeshConfig, Formatting.Indented));
         Config.ROOMS=thismap.toVector();
         thismap.getEDGE();
-        debug(client,info);
+        //debug(client,info);
     }
     //[RequiresPermissions("@css/nm_admin")]
     public void debug(CCSPlayerController? client, CommandInfo info)
 	{
         clearAll();
-        for(int i = 0;i<Config.nodeCount;i++)
+        for(int i = 0;i<Config.graph.VertexCount;i++)
         {
-            creatTo(Config.ROOMS[i],i);
-        }
-        for(int j=0;j<Config.nodeCount;j++)
-        {
-            for(int i=Config.head[j];i!=0;i=Config.edge[i].next)
-            {
-                creatFrom(Config.ROOMS[j],j,Config.edge[i].to);
-            }
+            creatTo(new Vector(Config.ROOMS[i].X,Config.ROOMS[i].Y,Config.ROOMS[i].Z+50),i);
+            creatFrom(new Vector(Config.ROOMS[i].X,Config.ROOMS[i].Y,Config.ROOMS[i].Z+10),i,i);
         }
     }
     //[RequiresPermissions("@css/nm_admin")]
