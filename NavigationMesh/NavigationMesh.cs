@@ -15,7 +15,7 @@ namespace NavigationMesh;
 public class NavigationMesh(ILogger<NavigationMesh> logger) : BasePlugin
 {
     public override string ModuleName => "NavigationMesh";
-    public override string ModuleVersion => "0.0.4";
+    public override string ModuleVersion => "0.0.5";
     public override string ModuleAuthor => "Wangsir";
     public override string ModuleDescription => "Navigation Mesh in cs2";
     public static PluginCapability<INavigationMeshAPI> m_APICapability{get;} = new("NavigationMesh:core");
