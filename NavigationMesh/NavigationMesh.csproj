@@ -11,7 +11,7 @@
   <ItemGroup>
     <PackageReference Include="CounterStrikeSharp.API" Version="1.0.305" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="QuickGraph" Version="3.6.61119.7" />
+    <PackageReference Include="QuikGraph" Version="2.5.0" />
     <Reference Include="NavigationMeshAPI.dll" />
   </ItemGroup>
 </Project>

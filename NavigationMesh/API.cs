@@ -1,57 +1,67 @@
 ﻿using CounterStrikeSharp.API.Modules.Utils;
 using NavigationMeshAPI;
-using QuickGraph;
-using QuickGraph.Algorithms.Observers;
-using QuickGraph.Algorithms.ShortestPath;
+using QuikGraph;
+using QuikGraph.Algorithms;
 
 namespace NavigationMesh.Other;
 public class NavigationMeshInterface:INavigationMeshAPI
 {
-    public int GetEntityid(Vector point)
+    public int getEntityid(Vector point)
     {
         int ans=0;
-        float ls=2147483647;
-        for(int i=0;i<Config.graph.VertexCount;i++)
+        float ls=0x7f7f7f7f;
+        for(int i=0;i<Config.m_Graph.VertexCount;i++)
         {
-            float ll=(point-Config.ROOMS[i]).Length();
+            float ll=(point-Config.m_NavigationMeshConfig[Config.m_name].m_points[i]).Length();
             if(ll>ls)continue;
             ls=ll;
             ans=i;
         }
         return ans;
     }
-    public Vector[]? GetPoint1ToPoint2List(Vector point1,Vector point2)
+    public float getEntityDistance(Vector point,int id)
     {
-        var from=GetEntityid(point1);
-        var to=GetEntityid(point2);
+        return (point-Config.m_NavigationMeshConfig[Config.m_name].m_points[id]).Length();
+    }
+    public Vector[] getPoint1ToPoint2List(Vector point1,Vector point2)
+    {
+        var ls= Config.m_Graph.Clone();
+        var from=ls.VertexCount;
+        ls.AddVertex(ls.VertexCount);
+        var to=ls.VertexCount;
+        ls.AddVertex(ls.VertexCount);
+        var speed=(point1-point2).Length();
+        if(speed<=Config.m_NodeRadius)
+        {
+            ls.AddEdge(new TaggedEdge<int,float>(from,to,speed));
+            ls.AddEdge(new TaggedEdge<int,float>(to,from,speed));
+        }
+        for(int i=0;i<from;i++)
+        {
+            speed=(Config.m_NavigationMeshConfig[Config.m_name].m_points[i]-point1).Length();
+            if(speed<=Config.m_NodeRadius)
+            {
+                ls.AddEdge(new TaggedEdge<int,float>(i,from,speed));
+                ls.AddEdge(new TaggedEdge<int,float>(from,i,speed));
+            }
+            speed=(Config.m_NavigationMeshConfig[Config.m_name].m_points[i]-point2).Length();
+            if(speed<=Config.m_NodeRadius)
+            {
+                ls.AddEdge(new TaggedEdge<int,float>(i,to,speed));
+                ls.AddEdge(new TaggedEdge<int,float>(to,i,speed));
+            }
+        }
         List<Vector> ans=new List<Vector>();
-        if(from==to)
+        var tryGetPaths = ls.ShortestPathsDijkstra(Config.m_EdgeCost, from);
+        if(tryGetPaths(to,out var path))
         {
-            ans.Add(point2);
-            return ans.ToArray();
-        }
-        var pathFinder = new UndirectedDijkstraShortestPathAlgorithm<int, Edge<int>>(Config.graph, Config.edgecost);
-        var predecessors=new UndirectedVertexPredecessorRecorderObserver<int, Edge<int>>();
-        using (predecessors.Attach(pathFinder))
-        {
-            pathFinder.Compute(from);
-        }
-        if(predecessors.TryGetPath(to,out var path))
-        {
-            int ls=-1;
             foreach(var edge in path)
             {
-                if(ls==-1)
-                {
-                    ans.Add(Config.ROOMS[edge.Source]);
-                    ls=0;
-                }
-                ans.Add(Config.ROOMS[edge.Target]);
+                if(edge.Target<from)ans.Add(Config.m_NavigationMeshConfig[Config.m_name].m_points[edge.Target]);
+                else if (edge.Target==from)ans.Add(point1);
+                else if (edge.Target==to)ans.Add(point2);
             }
-            ans.Add(point2);
-            return ans.ToArray();
         }
-        ans.Add(point2);
         return ans.ToArray();
     }
 }

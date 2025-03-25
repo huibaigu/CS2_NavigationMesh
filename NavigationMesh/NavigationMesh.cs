@@ -9,124 +9,124 @@ using Newtonsoft.Json;
 using static CounterStrikeSharp.API.Core.Listeners;
 using CounterStrikeSharp.API;
 using System.Drawing;
+using static NavigationMesh.Other.Config;
 
 namespace NavigationMesh;
 public class NavigationMesh(ILogger<NavigationMesh> logger) : BasePlugin
 {
     public override string ModuleName => "NavigationMesh";
-    public override string ModuleVersion => "0.0.2";
+    public override string ModuleVersion => "0.0.4";
     public override string ModuleAuthor => "Wangsir";
     public override string ModuleDescription => "Navigation Mesh in cs2";
-    public static PluginCapability<INavigationMeshAPI> APICapability{get;} = new("NavigationMesh:core");
-    public static string ConfigPath = Path.Combine(Application.RootDirectory, "configs/NavigationMesh/");
+    public static PluginCapability<INavigationMeshAPI> m_APICapability{get;} = new("NavigationMesh:core");
+    public static string m_ConfigPath = Path.Combine(Application.RootDirectory, "configs/plugins/NavigationMesh/");
     private readonly ILogger<NavigationMesh> _logger = logger;
-    public Dictionary<string, MapAttribute> NavigationMeshConfig=new Dictionary<string, MapAttribute>();
-    public MapAttributeSet thismap=new MapAttributeSet();
-    public INavigationMeshAPI? NM_API{ get; set; }
+    public INavigationMeshAPI m_API{ get; set; }=new NavigationMeshInterface();
     public override void Load(bool hotReload)
     {
-        AddCommand("css_nm_add", "Add boundary points to the current mesh", addPoint);
-        AddCommand("css_nm_delete", "Delete the previous point", deleteStack);
-        AddCommand("css_nm_debug", "Generate a route around the mesh", debug);
-        AddCommand("css_nm_clear", "clear a route", clear);
-        
-        AddCommand("css_nm_set1", "set point 1", set1);
-        AddCommand("css_nm_set2", "Generate a route from 1 to 2", set2);
-        var configPath = Path.Combine(ConfigPath, "Point.jsonc");
+        AddCommand("css_nm_add", "将脚下点加入网格", addPoint);
+        AddCommand("css_nm_delete", "删除离你最近的点", deletePoint);
+        AddCommand("css_nm_debug", "生成最近一个点的网格", debug);
+        AddCommand("css_nm_look", "查看所有点", look);
+        AddCommand("css_nm_clear", "清除所有激光", clear);
+        var configPath = Path.Combine(m_ConfigPath, "Point.jsonc");
         if(!File.Exists(configPath))
         {
             _logger.LogCritical("[NavigationMesh] Couldn't find a Config file!");
             return;
         }
         _logger.LogInformation("[NavigationMesh] Load Config file.");
-        NavigationMeshConfig = JsonConvert.DeserializeObject<Dictionary<string, MapAttribute>>(File.ReadAllText(configPath))??new Dictionary<string, MapAttribute>();
+        m_NavigationMeshConfig = JsonConvert.DeserializeObject<Dictionary<string, MapAttribute>>(File.ReadAllText(configPath),new NVConvert())??new Dictionary<string, MapAttribute>();
         RegisterListener<OnMapStart>(OnMapStart);
-        Capabilities.RegisterPluginCapability(APICapability, () => new NavigationMeshInterface());
-
-        NM_API = APICapability.Get()!;
+        m_API=new NavigationMeshInterface();
+        Capabilities.RegisterPluginCapability(m_APICapability, () => m_API);
     }
-    Vector pointA;
-    //[RequiresPermissions("@css/nm_admin")]
-    private void set2(CCSPlayerController? player, CommandInfo commandInfo)
-    {
-        clear(player,commandInfo);
-        var list=NM_API.GetPoint1ToPoint2List(pointA,player?.PlayerPawn.Value!.AbsOrigin!)??[];
-        for(int i=0;i<list.Length;i++)
-        {
-            creatTo(list[i],i);
-            if(i!=0)creatFrom(list[i-1],i-1,i);
-        }
-    }
-    //[RequiresPermissions("@css/nm_admin")]
-    private void set1(CCSPlayerController? player, CommandInfo commandInfo)
-    {
-
-        pointA=new Vector(player?.PlayerPawn.Value!.AbsOrigin!.X,player?.PlayerPawn.Value!.AbsOrigin!.Y,player?.PlayerPawn.Value!.AbsOrigin!.Z);
-    }
-
+    
     public void OnMapStart(string mapname)
     {
-        if(!NavigationMeshConfig.ContainsKey(mapname))NavigationMeshConfig.Add(mapname, new MapAttribute());
-        NavigationMeshConfig[mapname].Name=mapname;
-        thismap=new MapAttributeSet(NavigationMeshConfig[mapname]);
-        Config.ROOMS=thismap.toVector();
-        thismap.getEDGE();
+        m_name=mapname;
+        if(!m_NavigationMeshConfig.ContainsKey(m_name))m_NavigationMeshConfig.Add(mapname, new MapAttribute());
+        m_NavigationMeshConfig[m_name].getEdge();
     }
     //[RequiresPermissions("@css/nm_admin")]
     public void addPoint(CCSPlayerController? client, CommandInfo info)
 	{
-        if(thismap==null)
+        if(!m_NavigationMeshConfig.ContainsKey(m_name)||client == null)
         {
             _logger.LogCritical("ERROR!");
             return;
         }
         Server.PrintToChatAll("[NavigationMesh]add a point");
-        thismap.add(client?.PlayerPawn.Value!.AbsOrigin!);
+        m_NavigationMeshConfig[m_name].add(new Vector(client?.PlayerPawn.Value!.AbsOrigin!.X,client?.PlayerPawn.Value!.AbsOrigin!.Y,client?.PlayerPawn.Value!.AbsOrigin!.Z));
 
-        var configPath = Path.Combine(ConfigPath, "Point.jsonc");
-        NavigationMeshConfig[thismap.Name]=thismap.print();
-        JsonConvert.DeserializeObject<Dictionary<string, MapAttribute>>(File.ReadAllText(configPath));
-        File.WriteAllText(configPath, JsonConvert.SerializeObject(NavigationMeshConfig, Formatting.Indented));
-        Config.ROOMS=thismap.toVector();
-        thismap.getEDGE();
-        //debug(client,info);
+        var configPath = Path.Combine(m_ConfigPath, "Point.jsonc");
+        File.WriteAllText(configPath, JsonConvert.SerializeObject(m_NavigationMeshConfig, Formatting.Indented));
+        m_NavigationMeshConfig[m_name].getEdge();
+        debug(client,info);
     }
     //[RequiresPermissions("@css/nm_admin")]
-    public void deleteStack(CCSPlayerController? client, CommandInfo info)
+    public void deletePoint(CCSPlayerController? client, CommandInfo info)
 	{
-        if(thismap==null)
+        if(!m_NavigationMeshConfig.ContainsKey(m_name)||client == null)
         {
             _logger.LogCritical("ERROR!");
             return;
         }
         Server.PrintToChatAll("[NavigationMesh]delete a point");
-        thismap.delete();
-
-        var configPath = Path.Combine(ConfigPath, "Point.jsonc");
-        NavigationMeshConfig[thismap.Name]=thismap.print();
-        JsonConvert.DeserializeObject<Dictionary<string, MapAttribute>>(File.ReadAllText(configPath));
-        File.WriteAllText(configPath, JsonConvert.SerializeObject(NavigationMeshConfig, Formatting.Indented));
-        Config.ROOMS=thismap.toVector();
-        thismap.getEDGE();
-        //debug(client,info);
+        m_NavigationMeshConfig[m_name].delete(m_API.getEntityid(client?.PlayerPawn.Value!.AbsOrigin!));
+        var configPath = Path.Combine(m_ConfigPath, "Point.jsonc");
+        File.WriteAllText(configPath, JsonConvert.SerializeObject(m_NavigationMeshConfig, Formatting.Indented));
+        m_NavigationMeshConfig[m_name].getEdge();
+        debug(client,info);
     }
     //[RequiresPermissions("@css/nm_admin")]
     public void debug(CCSPlayerController? client, CommandInfo info)
 	{
-        clearAll();
-        for(int i = 0;i<Config.graph.VertexCount;i++)
+        if(!m_NavigationMeshConfig.ContainsKey(m_name)||client == null)
         {
-            creatTo(new Vector(Config.ROOMS[i].X,Config.ROOMS[i].Y,Config.ROOMS[i].Z+50),i);
-            creatFrom(new Vector(Config.ROOMS[i].X,Config.ROOMS[i].Y,Config.ROOMS[i].Z+10),i,i);
+            _logger.LogCritical("ERROR!");
+            return;
+        }
+        clear(client,info);
+        int id=m_API.getEntityid(client?.PlayerPawn.Value!.AbsOrigin!);
+        creatTo(new Vector(m_NavigationMeshConfig[m_name].m_points[id].X,m_NavigationMeshConfig[m_name].m_points[id].Y,m_NavigationMeshConfig[m_name].m_points[id].Z+10),id);
+        foreach(var edge in m_Graph.Edges)
+        {
+            if(edge.Source!=id&&edge.Target!=id)continue;
+            if(edge.Source==id)
+            {
+                creatFrom(new Vector(m_NavigationMeshConfig[m_name].m_points[edge.Target].X,m_NavigationMeshConfig[m_name].m_points[edge.Target].Y,m_NavigationMeshConfig[m_name].m_points[edge.Target].Z+10),edge.Target,id);
+
+            }
+            else if (edge.Target==id)
+            {
+                creatFrom(new Vector(m_NavigationMeshConfig[m_name].m_points[edge.Source].X,m_NavigationMeshConfig[m_name].m_points[edge.Source].Y,m_NavigationMeshConfig[m_name].m_points[edge.Source].Z+10),edge.Source,id);
+            }
+        }
+    }
+    //[RequiresPermissions("@css/nm_admin")]
+    private void look(CCSPlayerController? client, CommandInfo info)
+    {
+        if(!m_NavigationMeshConfig.ContainsKey(m_name))
+        {
+            _logger.LogCritical("ERROR!");
+            return;
+        }
+        clear(client,info);
+        for(int i = 0;i<Config.m_Graph.VertexCount;i++)
+        {
+            creatTo(new Vector(m_NavigationMeshConfig[m_name].m_points[i].X,m_NavigationMeshConfig[m_name].m_points[i].Y,m_NavigationMeshConfig[m_name].m_points[i].Z+10),i);
+            creatFrom(new Vector(m_NavigationMeshConfig[m_name].m_points[i].X,m_NavigationMeshConfig[m_name].m_points[i].Y,m_NavigationMeshConfig[m_name].m_points[i].Z),i,i);
         }
     }
     //[RequiresPermissions("@css/nm_admin")]
     private void clear(CCSPlayerController? client, CommandInfo info)
     {
-        clearAll();
-    }
-    private void clearAll()
-    {
+        if(!m_NavigationMeshConfig.ContainsKey(m_name))
+        {
+            _logger.LogCritical("ERROR!");
+            return;
+        }
         var entities=Utilities.FindAllEntitiesByDesignerName<CEnvLaser>("env_laser");
         foreach (var i in entities)
         {
@@ -151,7 +151,7 @@ public class NavigationMesh(ILogger<NavigationMesh> logger) : BasePlugin
         var target = Utilities.CreateEntityByName<CInfoTarget>("info_target");
         if (target == null || !target.IsValid)return;
         target.Entity!.Name="NM_"+id+"TG";
-        target.Teleport(new Vector(location.X,location.Y,location.Z+10));
+        target.Teleport(new Vector(location.X,location.Y,location.Z));
         target.DispatchSpawn();
     }
     private void creatFrom(Vector location,int id,int target)
@@ -161,7 +161,7 @@ public class NavigationMesh(ILogger<NavigationMesh> logger) : BasePlugin
         entity.Entity!.Name="NM_"+id;
         entity.Render=Color.Red;
         entity.Spawnflags=1;
-        entity.Teleport(new Vector(location.X,location.Y,location.Z+10));
+        entity.Teleport(new Vector(location.X,location.Y,location.Z));
         entity.DispatchSpawn();
         entity.LaserTarget="NM_"+target+"TG";
         entity.Target="NM_"+target+"TG";
