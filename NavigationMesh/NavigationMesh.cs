@@ -57,10 +57,10 @@ public class NavigationMesh(ILogger<NavigationMesh> logger) : BasePlugin
             return;
         }
         Server.PrintToChatAll("[NavigationMesh]add a point");
-        m_NavigationMeshConfig[m_name].add(new Vector(client?.PlayerPawn.Value!.AbsOrigin!.X,client?.PlayerPawn.Value!.AbsOrigin!.Y,client?.PlayerPawn.Value!.AbsOrigin!.Z));
+        m_NavigationMeshConfig[m_name].add(new Vector(client?.PlayerPawn.Value!.AbsOrigin!.X,client?.PlayerPawn.Value!.AbsOrigin!.Y,client?.PlayerPawn.Value!.AbsOrigin!.Z+10));
 
         var configPath = Path.Combine(m_ConfigPath, "Point.jsonc");
-        File.WriteAllText(configPath, JsonConvert.SerializeObject(m_NavigationMeshConfig, Formatting.Indented));
+        File.WriteAllText(configPath, JsonConvert.SerializeObject(m_NavigationMeshConfig,Formatting.Indented,new NVConvert()));
         m_NavigationMeshConfig[m_name].getEdge();
         debug(client,info);
     }
@@ -75,7 +75,7 @@ public class NavigationMesh(ILogger<NavigationMesh> logger) : BasePlugin
         Server.PrintToChatAll("[NavigationMesh]delete a point");
         m_NavigationMeshConfig[m_name].delete(m_API.getEntityid(client?.PlayerPawn.Value!.AbsOrigin!));
         var configPath = Path.Combine(m_ConfigPath, "Point.jsonc");
-        File.WriteAllText(configPath, JsonConvert.SerializeObject(m_NavigationMeshConfig, Formatting.Indented));
+        File.WriteAllText(configPath, JsonConvert.SerializeObject(m_NavigationMeshConfig,Formatting.Indented,new NVConvert()));
         m_NavigationMeshConfig[m_name].getEdge();
         debug(client,info);
     }
@@ -89,18 +89,18 @@ public class NavigationMesh(ILogger<NavigationMesh> logger) : BasePlugin
         }
         clear(client,info);
         int id=m_API.getEntityid(client?.PlayerPawn.Value!.AbsOrigin!);
-        creatTo(new Vector(m_NavigationMeshConfig[m_name].m_points[id].X,m_NavigationMeshConfig[m_name].m_points[id].Y,m_NavigationMeshConfig[m_name].m_points[id].Z+10),id);
+        creatTo(m_NavigationMeshConfig[m_name].m_points[id].m_point,id);
         foreach(var edge in m_Graph.Edges)
         {
             if(edge.Source!=id&&edge.Target!=id)continue;
             if(edge.Source==id)
             {
-                creatFrom(new Vector(m_NavigationMeshConfig[m_name].m_points[edge.Target].X,m_NavigationMeshConfig[m_name].m_points[edge.Target].Y,m_NavigationMeshConfig[m_name].m_points[edge.Target].Z+10),edge.Target,id);
+                creatFrom(m_NavigationMeshConfig[m_name].m_points[edge.Target].m_point,edge.Target,id);
 
             }
             else if (edge.Target==id)
             {
-                creatFrom(new Vector(m_NavigationMeshConfig[m_name].m_points[edge.Source].X,m_NavigationMeshConfig[m_name].m_points[edge.Source].Y,m_NavigationMeshConfig[m_name].m_points[edge.Source].Z+10),edge.Source,id);
+                creatFrom(m_NavigationMeshConfig[m_name].m_points[edge.Source].m_point,edge.Source,id);
             }
         }
     }
@@ -115,8 +115,8 @@ public class NavigationMesh(ILogger<NavigationMesh> logger) : BasePlugin
         clear(client,info);
         for(int i = 0;i<Config.m_Graph.VertexCount;i++)
         {
-            creatTo(new Vector(m_NavigationMeshConfig[m_name].m_points[i].X,m_NavigationMeshConfig[m_name].m_points[i].Y,m_NavigationMeshConfig[m_name].m_points[i].Z+10),i);
-            creatFrom(new Vector(m_NavigationMeshConfig[m_name].m_points[i].X,m_NavigationMeshConfig[m_name].m_points[i].Y,m_NavigationMeshConfig[m_name].m_points[i].Z),i,i);
+            creatTo(m_NavigationMeshConfig[m_name].m_points[i].m_point,i);
+            creatFrom(new Vector(m_NavigationMeshConfig[m_name].m_points[i].m_point.X,m_NavigationMeshConfig[m_name].m_points[i].m_point.Y,m_NavigationMeshConfig[m_name].m_points[i].m_point.Z-10),i,i);
         }
     }
     //[RequiresPermissions("@css/nm_admin")]

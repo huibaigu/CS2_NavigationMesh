@@ -22,11 +22,11 @@ public int GetEntityid(Vector point);
 /// <summary>
 /// 返回point与网格id的距离
 /// </summary>
-float getEntityDistance(Vector point,int id)
+public float getEntityDistance(Vector point,int id)
 /// <summary>
 /// 得到从1到2的路径
 /// </summary>
-public Vector[]? GetPoint1ToPoint2List(Vector point1,Vector point2);
+public string GetPoint1ToPoint2List(Vector point1,Vector point2);
 ```
 
 #### 插件参考视频（旧）

@@ -1,5 +1,6 @@
 ﻿using CounterStrikeSharp.API.Modules.Utils;
 using NavigationMeshAPI;
+using Newtonsoft.Json;
 using QuikGraph;
 using QuikGraph.Algorithms;
 
@@ -12,7 +13,7 @@ public class NavigationMeshInterface:INavigationMeshAPI
         float ls=0x7f7f7f7f;
         for(int i=0;i<Config.m_Graph.VertexCount;i++)
         {
-            float ll=(point-Config.m_NavigationMeshConfig[Config.m_name].m_points[i]).Length();
+            float ll=(point-Config.m_NavigationMeshConfig[Config.m_name].m_points[i].m_point).Length();
             if(ll>ls)continue;
             ls=ll;
             ans=i;
@@ -21,47 +22,47 @@ public class NavigationMeshInterface:INavigationMeshAPI
     }
     public float getEntityDistance(Vector point,int id)
     {
-        return (point-Config.m_NavigationMeshConfig[Config.m_name].m_points[id]).Length();
+        return (point-Config.m_NavigationMeshConfig[Config.m_name].m_points[id].m_point).Length();
     }
-    public Vector[] getPoint1ToPoint2List(Vector point1,Vector point2)
+    public string getPoint1ToPoint2List(Vector point1,Vector point2)
     {
         var ls= Config.m_Graph.Clone();
         var from=ls.VertexCount;
         ls.AddVertex(ls.VertexCount);
         var to=ls.VertexCount;
         ls.AddVertex(ls.VertexCount);
-        var speed=(point1-point2).Length();
-        if(speed<=Config.m_NodeRadius)
+        var spend=(point1-point2).Length();
+        if(spend<=Config.m_NodeRadius)
         {
-            ls.AddEdge(new TaggedEdge<int,float>(from,to,speed));
-            ls.AddEdge(new TaggedEdge<int,float>(to,from,speed));
+            ls.AddEdge(new TaggedEdge<int,float>(from,to,spend));
+            ls.AddEdge(new TaggedEdge<int,float>(to,from,spend));
         }
         for(int i=0;i<from;i++)
         {
-            speed=(Config.m_NavigationMeshConfig[Config.m_name].m_points[i]-point1).Length();
-            if(speed<=Config.m_NodeRadius)
+            spend=(Config.m_NavigationMeshConfig[Config.m_name].m_points[i].m_point-point1).Length();
+            if(spend<=Config.m_NodeRadius)
             {
-                ls.AddEdge(new TaggedEdge<int,float>(i,from,speed));
-                ls.AddEdge(new TaggedEdge<int,float>(from,i,speed));
+                ls.AddEdge(new TaggedEdge<int,float>(i,from,spend));
+                ls.AddEdge(new TaggedEdge<int,float>(from,i,spend));
             }
-            speed=(Config.m_NavigationMeshConfig[Config.m_name].m_points[i]-point2).Length();
-            if(speed<=Config.m_NodeRadius)
+            spend=(Config.m_NavigationMeshConfig[Config.m_name].m_points[i].m_point-point2).Length();
+            if(spend<=Config.m_NodeRadius)
             {
-                ls.AddEdge(new TaggedEdge<int,float>(i,to,speed));
-                ls.AddEdge(new TaggedEdge<int,float>(to,i,speed));
+                ls.AddEdge(new TaggedEdge<int,float>(i,to,spend));
+                ls.AddEdge(new TaggedEdge<int,float>(to,i,spend));
             }
         }
-        List<Vector> ans=new List<Vector>();
+        List<MapAttribute.MeshNode> ans=new List<MapAttribute.MeshNode>();
         var tryGetPaths = ls.ShortestPathsDijkstra(Config.m_EdgeCost, from);
         if(tryGetPaths(to,out var path))
         {
             foreach(var edge in path)
             {
                 if(edge.Target<from)ans.Add(Config.m_NavigationMeshConfig[Config.m_name].m_points[edge.Target]);
-                else if (edge.Target==from)ans.Add(point1);
-                else if (edge.Target==to)ans.Add(point2);
+                else if (edge.Target==from)ans.Add(new MapAttribute.MeshNode(point1,0));
+                else if (edge.Target==to)ans.Add(new MapAttribute.MeshNode(point2,0));
             }
         }
-        return ans.ToArray();
+        return JsonConvert.SerializeObject(ans,Formatting.Indented,new MapAttribute.MeshNodeConverter());
     }
 }

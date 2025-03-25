@@ -20,9 +20,10 @@ public class NVConvert : JsonConverter<Dictionary<string, MapAttribute>>
             foreach(var it in mp.Value.m_points)
             {
                 writer.WriteStartArray();
-                writer.WriteValue(it.X);
-                writer.WriteValue(it.Y);
-                writer.WriteValue(it.Z);
+                writer.WriteValue(it.m_point.X);
+                writer.WriteValue(it.m_point.Y);
+                writer.WriteValue(it.m_point.Z);
+                writer.WriteValue(it.m_type);
                 writer.WriteEndArray();
             }
             writer.WriteEndArray();
@@ -41,7 +42,7 @@ public class NVConvert : JsonConverter<Dictionary<string, MapAttribute>>
             ls.m_Name= (string)mname.Value["Name"];
             foreach(var it in (JArray)mname.Value["Points"])
             {
-                ls.m_points.Add(new Vector((float)it[0],(float)it[1],(float)it[2]));
+                ls.m_points.Add(new MapAttribute.MeshNode(new Vector((float)it[0],(float)it[1],(float)it[2]),(int)it[3]));
             }
             ans.Add(mname.Key,ls);
         }
@@ -59,8 +60,48 @@ public class Config
 
 public class MapAttribute
 {
+    public class MeshNodeConverter : JsonConverter<List<MeshNode>>
+    {
+        public override void WriteJson(JsonWriter writer, List<MeshNode> value, JsonSerializer serializer)
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("return");
+            writer.WriteStartArray();
+            foreach (var kvp in value)
+            {
+                writer.WriteStartArray();
+                writer.WriteValue(kvp.m_point.X);
+                writer.WriteValue(kvp.m_point.Y);            
+                writer.WriteValue(kvp.m_point.Z);
+                writer.WriteValue(kvp.m_type);
+                writer.WriteEndArray();
+            }
+            writer.WriteEndArray();
+            writer.WriteEndObject();
+        }
+
+        public override List<MeshNode> ReadJson(JsonReader reader, Type objectType, List<MeshNode> existingValue, bool hasExistingValue, JsonSerializer serializer)
+        {
+            var jsonObject = JObject.Load(reader);
+            List<MeshNode> ans = new List<MeshNode>();
+            foreach (var mname in jsonObject)
+            {
+                foreach(var i in (JArray)mname.Value["return"])
+                {
+                    ans.Add(new MeshNode(new Vector((float)i[0],(float)i[1],(float)i[2]),(int)i[3]));
+                }
+            }
+            return ans;
+        }
+    }
+    public class MeshNode(Vector point,int type)
+    {
+        public readonly Vector m_point=point;
+        //0:地面节点,1:攀爬节点;
+        public readonly int m_type=type;
+    }
     public string m_Name { get; set; }="";
-    public List<Vector>m_points{ get; set; }=new List<Vector>();
+    public List<MeshNode>m_points{ get; set; }=new List<MeshNode>();
     public void getEdge()
     {
         Config.m_Graph=new AdjacencyGraph<int, TaggedEdge<int,float>>();
@@ -69,7 +110,7 @@ public class MapAttribute
         {
             for(int j=i+1;j<Config.m_Graph.VertexCount;j++)
             {
-                var spend=(m_points[i]-m_points[j]).Length();
+                var spend=(m_points[i].m_point-m_points[j].m_point).Length();
                 if(spend<=Config.m_NodeRadius)
                 {
                     Config.m_Graph.AddEdge(new TaggedEdge<int,float>(i,j,spend));
@@ -78,9 +119,9 @@ public class MapAttribute
             }
         }
     }
-    public void add(Vector point)
+    public void add(Vector point,int? type=0)
     {
-        m_points.Add(point);
+        m_points.Add(new MeshNode(point,type??0));
     }
     public void delete(int id)
     {

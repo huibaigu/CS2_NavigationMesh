@@ -5,11 +5,15 @@ namespace NavigationMeshAPI;
 public interface INavigationMeshAPI
 {
     /// <summary>
-    /// 返回距离实体最近的point的id
+    /// 返回距离point最近的meshid
     /// </summary>
-    public int GetEntityid(Vector point);
+    public int getEntityid(Vector point);
     /// <summary>
-    /// 得到1到2的路径
+    /// 返回point到指定mesh的距离
     /// </summary>
-    public Vector[]? GetPoint1ToPoint2List(Vector point1,Vector point2);
+    public float getEntityDistance(Vector point,int id);
+    /// <summary>
+    /// 得到1到2的最短路径
+    /// </summary>
+    public string getPoint1ToPoint2List(Vector point1,Vector point2);
 }
