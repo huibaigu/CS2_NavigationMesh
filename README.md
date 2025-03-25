@@ -31,6 +31,3 @@ public Vector[]? GetPoint1ToPoint2List(Vector point1,Vector point2);
 
 #### 插件参考视频（旧）
 [![Video Label](https://i2.hdslb.com/bfs/archive/80f48ad05b25f585631fe9ea5044725d0da463b6.jpg@308w_174h)](https://www.bilibili.com/video/BV1Er9yYwEnm/)
-
-#### 使用具体效果（旧）
-[![Video Label](https://i2.hdslb.com/bfs/archive/80f48ad05b25f585631fe9ea5044725d0da463b6.jpg@308w_174h)](https://www.bilibili.com/video/BV1Er9yYwEnm/)
